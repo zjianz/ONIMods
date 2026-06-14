@@ -1,0 +1,106 @@
+﻿<Project>
+  <!--modify from https://github.com/peterhaneve/ONIMods/blob/main/Directory.Build.targets by linces MIT 2.0-->
+  <Target Name="WriteModInfo" BeforeTargets="PreBuildEvent" Condition="'$(AssemblyTitle)' != 'GlobalUtil'">
+    <PropertyGroup>
+      <ModInfoFile>$(IntermediateOutputPath)mod.yaml</ModInfoFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <ModInfoLines Include="title: &quot;$(AssemblyTitle)&quot;"/>
+      <ModInfoLines Include="description: &quot;$(Description)&quot;"/>
+      <ModInfoLines Include="staticID: CalYu.$(AssemblyName)"/>
+    </ItemGroup>
+    <WriteLinesToFile
+      File="$(ModInfoFile)"
+      Overwrite="true"
+      Lines="@(ModInfoLines)"/>
+    <Message Text="$$$ Write mod info file: $(ModInfoFile)" Importance="high"/>
+  </Target>
+  
+  <Target Name="WriteModDesc" BeforeTargets="PreBuildEvent" Condition="'$(AssemblyTitle)' != 'GlobalUtil'">
+    <PropertyGroup>
+      <ModDescFile>$(IntermediateOutputPath)mod_info.yaml</ModDescFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <ModDescFileLines Include="minimumSupportedBuild: $(LastWorkingBuild)"/>
+      <ModDescFileLines Include="version: $(FileVersion)"/>
+      <ModDescFileLines Include="APIVersion: $(APIVersion)"/>
+    </ItemGroup>
+    <WriteLinesToFile
+      File="$(ModDescFile)"
+      Overwrite="true"
+      Lines="@(ModDescFileLines)"/>
+    <Message Text="$$$ Write mode desc file: $(ModDescFile)" Importance="high"/>
+  </Target>
+  
+  <Target Name="ILRepack" AfterTargets="Build">
+    <ItemGroup Condition=" '$(UseLib)' == 'true' ">
+      <InputAssemblies Include="$(TargetPath)"/>
+      <InputAssemblies Include="$(TargetDir)GlobalUtil*.dll"/>
+    </ItemGroup>
+    <ItemGroup Condition=" '$(UseLib)' == 'false' ">
+      <InputAssemblies Include="$(TargetPath)"/>
+    </ItemGroup>
+    
+    <ILRepack
+      Condition="'@(InputAssemblies)' != ''" 
+      TargetPlatformVersion="v4"
+      TargetKind="SameAsPrimaryAssembly"
+      OutputFile="$(TargetPath)"
+      InputAssemblies="@(InputAssemblies)"
+      XmlDocumentation="true"
+      Internalize="true"
+      Wildcards="true"
+      LibraryPath="$(LibraryDir)"/>
+  </Target>
+  
+  <Target Name="ClearGameFolderCopyLocal" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="$(GameFolderActive)\*"/>
+    </ItemGroup>
+  </Target>
+  <Target Name="InstallMod" AfterTargets="ILRepack" Condition="'$(AssemblyTitle)' != 'GlobalUtil'">
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <InstallDir>..\Release\$(ProjectName)</InstallDir>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <InstallDir>$(ModDevDir)\$(ProjectName)</InstallDir>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <AnimFiles Include="$(ProjectDir)\anim\**\*.*"/>
+      <TranslationFiles Include="$(ProjectDir)\translations\*.po"/>
+      <TranslationTempleteFiles Include="$(ProjectDir)\translations\*.pot"/>
+      <WorldGenFiles Include="$(ProjectDir)\worldgen\**\*.*"/>
+      <WorldGenTemplates Include="$(ProjectDir)\templates\**\*.*"/>
+      <ElementFiles Include="$(ProjectDir)\elements\**\*.*"/>
+      <CodexFiles Include="$(ProjectDir)\codex\**\*.*"/>
+      <YamlFiles Include="$(ProjectDir)\*.yaml"/>
+      <AssestFiles Include="$(ProjectDir)\assets\**\*"/>
+    </ItemGroup>
+    
+    <Message Text="$$$ Build End" Importance="high"/>
+    <Message Text="$$$ Build Mode: $(Configuration)" Importance="high"/>
+    <Message Text="$$$ Build Target: $(TargetPath)" Importance="high"/>
+    <Message Text="$$$ Install dir $(InstallDir)" Importance="high"/>
+    
+    <Copy SourceFiles="@(AnimFiles)"
+          DestinationFiles="@(AnimFiles->'$(InstallDir)\anim\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+    />
+    <Copy SourceFiles="@(AssestFiles)"
+          DestinationFiles="@(AssestFiles->'$(InstallDir)\assets\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+    />
+    <Copy SourceFiles="@(TranslationFiles)" DestinationFolder="$(InstallDir)\translations"/>
+    <Copy SourceFiles="@(TranslationTempleteFiles)" DestinationFolder="$(InstallDir)\translations"/>
+    <Copy SourceFiles="@(ElementFiles)" DestinationFiles="@(ElementFiles->'$(InstallDir)\elements\%(RecursiveDir)%(Filename)%(Extension)')"/>
+    <Copy SourceFiles="@(CodexFiles)" DestinationFiles="@(CodexFiles->'$(InstallDir)\codex\%(RecursiveDir)%(Filename)%(Extension)')"/>
+    <Copy SourceFiles="@(WorldGenFiles)" DestinationFiles="@(WorldGenFiles->'$(InstallDir)\worldgen\%(RecursiveDir)%(Filename)%(Extension)')"/>
+    <Copy SourceFiles="@(WorldGenTemplates)" DestinationFiles="@(WorldGenTemplates->'$(InstallDir)\templates\%(RecursiveDir)%(Filename)%(Extension)')"/>
+    <Copy SourceFiles="@(YamlFiles)" DestinationFolder="$(InstallDir)"/>
+    <Copy SourceFiles="$(ModInfoFile)" DestinationFolder="$(InstallDir)"/>
+    <Copy SourceFiles="$(ModDescFile)" DestinationFolder="$(InstallDir)"/>
+    <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(InstallDir)\$(TargetFileName)"/>
+  </Target>
+
+</Project>
