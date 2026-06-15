@@ -7,15 +7,13 @@ namespace GlobalUtil
 	public class Logger
 	{
 		private static Logger _instance;
-		private string _prefix;
-		private bool initialized = false;
+		private string _prefix = "";
 
 		public static void Init(UserMod2 mod)
 		{
-			if (initialized || mod == null) return;
+			if (mod == null) return;
 			_instance = new Logger();
-			_prefix = $"[{mod.Name}] ";
-			initialized = true;
+			_instance._prefix = $"[{mod.mod.staticID}] ";
 		}
 
 		private void LogInfo(params object[] args)
@@ -31,6 +29,13 @@ namespace GlobalUtil
 		private void LogError(params object[] args)
 		{
 			Debug.LogError(GetMessage(args));
+		}
+
+		private void LogDebug(params object[] args)
+		{
+		#if DEBUG
+			Debug.Log(GetMessage(args));
+		#endif
 		}
 
 		private string GetMessage(object[] args)
@@ -51,6 +56,19 @@ namespace GlobalUtil
 		public static void Error(params object[] args)
 		{
 			_instance.LogError(args);
+		}
+
+		public static void DebugLog(params object[] args)
+		{
+			_instance.LogDebug(args);
+		}
+
+		public static void Assert(bool condition, params object[] args)
+		{
+			if (!condition)
+			{
+				_instance.LogError(args);
+			}
 		}
 	}
 }
